@@ -13,6 +13,5 @@ A **shopping list app** built with **Flutter**, using **Firebase** for authentic
 
 ## Screenshots
 
-
 https://github.com/user-attachments/assets/3d4037ea-fa5c-41e0-a33a-e6afc808d900
 

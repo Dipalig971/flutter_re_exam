@@ -1,29 +1,27 @@
-class ShoppingModel {
-  final int? id;
-  final String itemName;
-  final int quantity;
-  final String category;
-  final bool purchased;
 
-  ShoppingModel({this.id, required this.itemName, required this.quantity, required this.category, required this.purchased});
+class Shopping {
+  String id;
+  String name;
+  int quantity;
+  double price;
+
+  Shopping({required this.id, required this.name, required this.quantity, required this.price});
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'itemName': itemName,
+      'name': name,
       'quantity': quantity,
-      'category': category,
-      'purchased': purchased ? 1 : 0,
+      'price': price,
     };
   }
 
-  factory ShoppingModel.fromMap(Map<String, dynamic> map) {
-    return ShoppingModel(
-      id: map['id'],
-      itemName: map['itemName'],
-      quantity: map['quantity'],
-      category: map['category'],
-      purchased: map['purchased'] == 1,
+  factory Shopping.fromMap(Map<String, dynamic> map) {
+    return Shopping(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      quantity: map['quantity'] ?? 0,
+      price: map['price'] ?? 0.0,
     );
   }
 }

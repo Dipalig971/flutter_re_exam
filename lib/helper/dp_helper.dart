@@ -1,30 +1,25 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../modal/shopping_list.dart';
+import '../modal/user_model.dart';
 
-class DbHelper {
-  static DbHelper dbHelper = DbHelper._();
-  DbHelper._();
 
+class DBHelper {
   static Database? _database;
 
-  Future<Database> get db async {
+  Future<Database> initDB() async {
     if (_database != null) return _database!;
-    _database = await initDb();
-    return _database!;
-  }
 
-  Future<Database> initDb() async {
-    String path = join(await getDatabasesPath(), 'shopping.db');
-    return await openDatabase(
+    String path = join(await getDatabasesPath(), 'shopping_list.db');
+    _database = await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
-          CREATE TABLE shopping (
+          CREATE TABLE items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            itemName TEXT,
+            name TEXT,
             quantity INTEGER,
             category TEXT,
             purchased INTEGER
@@ -32,39 +27,52 @@ class DbHelper {
         ''');
       },
     );
+
+    return _database!;
   }
 
-  // Create operation
-  Future<int> insertShoppingItem(ShoppingModel shoppingModel) async {
-    var dbClient = await db;
-    return await dbClient.insert('shopping', shoppingModel.toMap());
-  }
-
-  Future<List<ShoppingModel>> getShoppingItems() async {
-    var dbClient = await db;
-    final List<Map<String, dynamic>> maps = await dbClient.query('shopping');
-
-    return List.generate(maps.length, (i) {
-      return ShoppingModel.fromMap(maps[i]);
+  Future<List<ShoppingItem>> getItems() async {
+    final db = await initDB();
+    final data = await db.query('items');
+    return List.generate(data.length, (i) {
+      return ShoppingItem.fromMap(data[i]);
     });
   }
 
-  Future<int> updateShoppingItem(ShoppingModel shoppingModel) async {
-    var dbClient = await db;
-    return await dbClient!.update(
-      'shopping',
-      shoppingModel.toMap(),
+  Future<void> insertItem(ShoppingItem item) async {
+    final db = await initDB();
+    await db.insert('items', item.toMap());
+  }
+
+  Future<void> deleteItem(int id) async {
+    final db = await initDB();
+    await db.delete('items', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateItemPurchased(int id, bool purchased) async {
+    final db = await initDB();
+    await db.update('items', {'purchased': purchased ? 1 : 0},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateItem(ShoppingItem item) async {
+    final db = await initDB();
+    await db.update(
+      'items',
+      item.toMap(),
       where: 'id = ?',
-      whereArgs: [shoppingModel.id],
+      whereArgs: [item.id],
     );
   }
 
-  Future<int> deleteShoppingItem(int id) async {
-    var dbClient = await db;
-    return await dbClient.delete(
-      'shopping',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  Future<void> syncLocalDatabase(List<ShoppingItem> cloudItems) async {
+    final db = await initDB();
+    for (var item in cloudItems) {
+      await db.insert(
+        'shopping_items',
+        item.toMap(),
+
+      );
+    }
   }
 }

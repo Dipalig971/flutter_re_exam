@@ -1,43 +1,49 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:get/get.dart';
+import '../modal/shopping_list.dart';
+import '../modal/user_model.dart';
+import 'dp_helper.dart';
 
-class AuthServices {
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  static AuthServices authServices = AuthServices();
 
-  Future<void> CreateAccount(String email, String password) async {
-    UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-        email: email, password: password);
-    print(userCredential.user!.email);
+class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DBHelper _dbHelper = DBHelper();
+
+  Future<void> signUpWithEmail(String email, String password) async {
+    await _auth.createUserWithEmailAndPassword(email: email, password: password);
   }
 
-  Future<User?> Signin(String email, String password) async {
-    try {
-      UserCredential userCredential = await auth.signInWithEmailAndPassword(
-          email: email, password: password);
-      return userCredential.user;
-    } catch (e) {
-      print(e);
-      return null;
+  Future<void> signInWithEmail(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+
+  Future<void> uploadItemsToFirestore() async {
+    final firestore = FirebaseFirestore.instance;
+    final items = await _dbHelper.getItems();
+
+    for (var item in items) {
+      await firestore.collection('shopping_list').doc(item.id.toString()).set(item.toMap());
     }
   }
 
-  Future<bool> CheckEmail(String email,) async {
-    try {
-      List<String> signIn = await auth.fetchSignInMethodsForEmail(email);
-      return signIn.isNotEmpty;
-    } catch (e) {
-      print(e);
-      return false;
-    }
-  }
+  Future<void> fetchItemsFromFirestore() async {
+    final firestore = FirebaseFirestore.instance;
+    final snapshot = await firestore.collection('shopping_list').get();
 
-  Future<void> signout() async {
-    await auth.signOut();
-    User? user = auth.currentUser;
-    if (user == null) {
-      Get.back();
+    for (var doc in snapshot.docs) {
+      ShoppingItem item = ShoppingItem(
+        id: int.tryParse(doc.id),
+        name: doc.data()['name'],
+        quantity: doc.data()['quantity'],
+        category: doc.data()['category'],
+        purchased: doc.data()['purchased'] == 1,
+      );
+
+      await _dbHelper.insertItem(item);
     }
   }
 }

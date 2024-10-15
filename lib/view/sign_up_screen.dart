@@ -10,7 +10,6 @@ class SignUpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final HomeController controller = Get.put(HomeController());
     final AuthController authController = Get.put(AuthController());
     return Scaffold(
       body: SingleChildScrollView(
@@ -39,7 +38,7 @@ class SignUpScreen extends StatelessWidget {
               height: 10,
             ),
             TextField(
-              controller: controller.username,
+              controller: authController.txtFirstName,
               decoration: const InputDecoration(
                 labelText: 'Create your username',
                 labelStyle: TextStyle(color: Colors.black),
@@ -61,7 +60,7 @@ class SignUpScreen extends StatelessWidget {
               height: 10,
             ),
             TextField(
-              controller: controller.email,
+              controller: authController.txtEmail,
               decoration: const InputDecoration(
                 labelText: 'Enter your email or phone number',
                 labelStyle: TextStyle(color: Colors.black),
@@ -83,7 +82,7 @@ class SignUpScreen extends StatelessWidget {
               height: 10,
             ),
             TextField(
-              controller: controller.password,
+              controller: authController.txtPassword,
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Create your password',
@@ -99,13 +98,17 @@ class SignUpScreen extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 Map m1 = {
-                  'name': controller.username.text,
-                  'password': controller.password.text,
-                  'email': controller.email.text,
+                  'name': authController.txtFirstName.text,
+                  'password': authController.txtPassword.text,
+                  'email': authController.txtEmail.text,
                 };
-                Get.off( HomeScreen());
-                authController.Signup(
-                    controller.email.text, controller.password.text);
+
+                authController.signUpMethod(
+                    authController.txtEmail.text, authController.txtPassword.text);
+                authController.txtEmail.clear();
+                authController.txtPassword.clear();
+                authController.txtFirstName.clear();
+                Get.off(HomeScreen());
               },
               child: Container(
                 height: 60,

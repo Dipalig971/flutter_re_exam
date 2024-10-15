@@ -1,120 +1,230 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_re_exam/controller/home_controller.dart';
-import 'package:get/get.dart';
 
-import '../modal/shopping_list.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../controller/auth_controller.dart';
+import '../controller/home_controller.dart';
+import '../modal/user_model.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final ShoppingController shoppingController = Get.put(ShoppingController());
+  final AuthController controller = Get.put(AuthController());
+
+   HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    HomeController controller = HomeController();
-    TextEditingController editingNameController = TextEditingController();
-    TextEditingController editingQuantityController = TextEditingController();
-    TextEditingController editingCategoryController = TextEditingController();
-    TextEditingController itemNameController = TextEditingController();
-    TextEditingController quantityController = TextEditingController();
-    TextEditingController categoryController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.pink,
+        backgroundColor:  Colors.pink,
         leading: const Icon(
           Icons.menu,
           color: Colors.white,
         ),
-        title: const Text(
-          'Shopping List',
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Icon(
+        title: const Text('Shopping List',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white)),
+        actions: [
+          IconButton(
+            icon: const Icon(
               Icons.sync,
               color: Colors.white,
             ),
-          )
+            onPressed: () {
+              shoppingController.Firebase();
+            },
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.white,
+            ),
+            onPressed: () {},
+          ),
         ],
         centerTitle: true,
       ),
-      body: Column(children: [
-        Expanded(
-          child: Obx(() {
-            return ListView.builder(
-              itemCount: controller.shoppingList.length,
-              itemBuilder: (context, index) {
-                final item = controller.shoppingList[index];
-                return ListTile(
-                  title: Text(item.itemName),
-                  subtitle: Text(
-                      'Quantity: ${item.quantity}, Category: ${item.category}'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      controller.deleteShoppingItem(item.id!);
-                    },
-                  ),
-                );
-              },
-            );
-          }),
-        ),
-      ]),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.pink,
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Column(
-                  children: [
-                    TextField(
-                      controller: itemNameController,
-                      decoration: InputDecoration(labelText: 'Item Name'),
-                    ),
-                    TextField(
-                      controller: quantityController,
-                      decoration: InputDecoration(labelText: 'Quantity'),
-                      keyboardType: TextInputType.number,
-                    ),
-                    TextField(
-                      controller: categoryController,
-                      decoration: InputDecoration(labelText: 'Category'),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                      onPressed: () {
-                        controller.addShoppingItem(ShoppingModel(
-                          itemName: itemNameController.text,
-                          quantity: int.parse(quantityController.text),
-                          category: categoryController.text,
-                          purchased: false,
-                        ));
-                        itemNameController.clear();
-                        quantityController.clear();
-                        categoryController.clear();
+      body: Obx(() {
+        if (shoppingController.items.isEmpty) {
+          return const Center(child: Text('No items in your shopping list.'),
 
-                        Get.back();
-                      },
-                      child: const Text('Save')),
-                  TextButton(
-                      onPressed: () {
-                        Get.back();
-                      },
-                      child: const Text('Cancel')),
-                ],
-              );
-            },
           );
-        },
+        }
+
+        return ListView.builder(
+          itemCount: shoppingController.items.length,
+          itemBuilder: (context, index) {
+            final item = shoppingController.items[index];
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Card(
+                child: ListTile(
+                  title: Text(
+                    item.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quantity: ${item.quantity}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text('Category: ${item.category}'),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        activeColor: const Color(0xff005667),
+                        value: item.purchased,
+                        onChanged: (value) {
+                          shoppingController.Purchased(item.id!, value!);
+                        },
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          shoppingController.deleteItem(item.id!);
+                        },
+                        icon: Icon(
+                          Icons.delete,
+                          color: Colors.red.shade500,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _showEditItemDialog(
+                              context, item); // Open edit dialog
+                        },
+                        icon: const Icon(
+                          Icons.edit,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor:  Colors.pink,
         child: const Icon(
           Icons.add,
           color: Colors.white,
         ),
+        onPressed: () {
+          _showAddItemDialog(context);
+        },
+      ),
+    );
+  }
+
+  void _showAddItemDialog(BuildContext context) {
+    String name = '';
+    int quantity = 1;
+    String category = 'Groceries';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              onChanged: (value) => name = value,
+              decoration: const InputDecoration(labelText: 'Item Name'),
+            ),
+            TextField(
+              onChanged: (value) => quantity = int.tryParse(value) ?? 1,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Quantity'),
+            ),
+            DropdownButton<String>(
+              value: category,
+              onChanged: (value) => category = value!,
+              items: ['Groceries', 'Electronics', 'Clothing'].map((category) {
+                return DropdownMenuItem(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (name.isNotEmpty) {
+                shoppingController.addItem(name, quantity, category);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditItemDialog(BuildContext context, ShoppingItem item) {
+    String name = item.name;
+    int quantity = item.quantity;
+    String category = item.category;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              onChanged: (value) => name = value,
+              controller: TextEditingController(text: name),
+              decoration: const InputDecoration(labelText: 'Item Name'),
+            ),
+            TextField(
+              onChanged: (value) => quantity = int.tryParse(value) ?? quantity,
+              controller: TextEditingController(text: quantity.toString()),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Quantity'),
+            ),
+            DropdownButton<String>(
+              value: category,
+              onChanged: (value) => category = value!,
+              items: ['Groceries', 'Electronics', 'Clothing'].map((category) {
+                return DropdownMenuItem(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (name.isNotEmpty) {
+                final updatedItem = ShoppingItem(
+                  id: item.id,
+                  name: name,
+                  quantity: quantity,
+                  category: category,
+                  purchased: item.purchased,
+                );
+                shoppingController.editItem(updatedItem);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

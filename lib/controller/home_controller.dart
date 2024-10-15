@@ -1,46 +1,61 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_re_exam/modal/shopping_list.dart';
 import 'package:get/get.dart';
 
 import '../helper/dp_helper.dart';
+import '../helper/firebase_services.dart';
+import '../modal/shopping_list.dart';
+import '../modal/user_model.dart';
 
 
-class HomeController extends GetxController {
-  RxList shoppingList = <ShoppingModel>[].obs;
+class ShoppingController extends GetxController {
+  final DBHelper dbHelper = DBHelper();
+  final FirebaseHelper _firebaseHelper = FirebaseHelper();
 
-  // var email= ''.obs;
-  TextEditingController username = TextEditingController();
-  TextEditingController email = TextEditingController();
-  TextEditingController password = TextEditingController();
-
-  TextEditingController titleController = TextEditingController();
+  var items = <ShoppingItem>[].obs;
 
   @override
   void onInit() {
     super.onInit();
-    fetchShoppingItems();
+    fetchdata();
   }
 
-  Future<void> fetchShoppingItems()  async {
-    var shop = await DbHelper.dbHelper.getShoppingItems();
-   shoppingList.value = shop;
+  Future<void> fetchdata() async {
+    final data = await dbHelper.getItems();
+    items.assignAll(data);
   }
 
-
-  void addShoppingItem(ShoppingModel shoppingModel) async {
-    await DbHelper.dbHelper.insertShoppingItem(shoppingModel);
-    fetchShoppingItems();
+  Future<void> addItem(String name, int quantity, String category) async {
+    final newItem = ShoppingItem(
+      name: name,
+      quantity: quantity,
+      category: category,
+      purchased: false,
+    );
+    await dbHelper.insertItem(newItem);
+    fetchdata();
   }
 
-  void updateShoppingItem(ShoppingModel shoppingModel) async {
-    await DbHelper.dbHelper.updateShoppingItem(shoppingModel);
-    fetchShoppingItems();
+  Future<void> deleteItem(int id) async {
+    await dbHelper.deleteItem(id);
+    fetchdata();
   }
 
+  Future<void> Purchased(
+      int id,
+      bool purchased,
+      ) async {
+    await dbHelper.updateItemPurchased(id, purchased);
+    fetchdata();
+  }
 
-  void deleteShoppingItem(int id) async {
-    await DbHelper.dbHelper.deleteShoppingItem(id);
-    fetchShoppingItems();
+  Future<void> editItem(ShoppingItem updatedItem) async {
+    await dbHelper.updateItem(updatedItem);
+    fetchdata();
+  }
+
+  Future<void> Firebase() async {
+    await _firebaseHelper.uploadFirestore(items);
+    final Item = await _firebaseHelper.fetchItemsFromFirestore();
+    await dbHelper.syncLocalDatabase(Item);
+    fetchdata();
   }
 }
-

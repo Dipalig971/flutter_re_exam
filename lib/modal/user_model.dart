@@ -1,19 +1,36 @@
-class UserModel {
-  String? name, email;
-  int? password;
 
-  UserModel({required this.name, required this.email, required this.password});
+class ShoppingItem {
+  int? id;
+  String name;
+  int quantity;
+  String category;
+  bool purchased;
 
-  factory UserModel.fromMap(Map m1) {
-    return UserModel(
-        name: m1['name'], email: m1['email'], password: m1['password']);
+  ShoppingItem({
+    this.id,
+    required this.name,
+    required this.quantity,
+    required this.category,
+    this.purchased = false,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'quantity': quantity,
+      'category': category,
+      'purchased': purchased ? 1 : 0,
+    };
   }
 
-  Map<String,dynamic> toMap(){
-    return {
-      'name':name,
-      'email':email,
-      'password':password
-    };
+  factory ShoppingItem.fromMap(Map<String, dynamic> map) {
+    return ShoppingItem(
+      id: map['id'],
+      name: map['name'],
+      quantity: map['quantity'],
+      category: map['category'],
+      purchased: map['purchased'] == 1,
+    );
   }
 }
